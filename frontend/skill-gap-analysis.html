@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Gap Analysis - ISOTOPES</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        .skill-gap-card {
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .matched-skill {
+            border-left-color: #28a745;
+        }
+        .missing-skill {
+            border-left-color: #dc3545;
+        }
+        .skill-badge {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 4px 4px 4px 0;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .matched-badge {
+            background: #d4edda;
+            color: #155724;
+        }
+        .missing-badge {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .high-priority-badge {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .gap-percentage {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="student-dashboard.html">
+                <i class="fas fa-dna"></i> ISOTOPES
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="student-dashboard.html">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="student-profile.html">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="skill-gap-analysis.html">Skill Gap</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="skill-assessment.html">Assessment</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="student-profile.html">My Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="index.html" onclick="logout()">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Alert Container -->
+    <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 11;"></div>
+
+    <!-- Main Content -->
+    <div class="container-fluid py-5">
+        <div class="container">
+            <!-- Header -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <h2 class="fw-bold mb-2">Skill Gap Analysis</h2>
+                    <p class="text-muted">Understand your current skills vs. your target role requirements</p>
+                </div>
+            </div>
+
+            <!-- Career Role Selector -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">Select Target Career Role</h6>
+                            <div id="careerRoleSelector" class="row g-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Results (Hidden by default) -->
+            <div id="analysisResults" style="display: none;">
+                <!-- Match Percentage Card -->
+                <div class="row mb-5">
+                    <div class="col-lg-4">
+                        <div class="card text-center">
+                            <div class="card-body py-5">
+                                <div class="gap-percentage" id="matchPercentage">0%</div>
+                                <p class="text-muted mb-0">Role Readiness</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">Career Overview</h6>
+                                <div id="roleDetails"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matched Skills -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>Matched Skills
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="matchedSkills"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Missing Skills -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-exclamation-circle me-2"></i>Skills to Develop
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="missingSkills"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Improvement Guidance -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-lightbulb me-2"></i>Personalized Improvement Guidance
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="improvementGuidance"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 ISOTOPES. Building careers through evidence-based skill intelligence.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Check if user is logged in
+        if (!isUserLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        let studentData = null;
+        let selectedRole = null;
+
+        // Load data on page load
+        async function loadData() {
+            // Fetch career roles
+            const rolesResult = await fetchCareerRoles();
+            if (rolesResult.success) {
+                displayCareerRoleSelector(rolesResult.roles);
+            }
+
+            // Fetch student profile
+            const studentResult = await fetchStudentProfile();
+            if (studentResult.success) {
+                studentData = studentResult.student;
+            }
+        }
+
+        // Display career role selector
+        function displayCareerRoleSelector(roles) {
+            const selector = document.getElementById('careerRoleSelector');
+            selector.innerHTML = roles.map(role => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card cursor-pointer" onclick="selectRole('${role._id}', '${role.title}')" style="cursor: pointer;">
+                        <div class="card-body">
+                            <h6 class="card-title">${role.title}</h6>
+                            <p class="text-muted small mb-2">${role.industry}</p>
+                            <span class="badge bg-primary">${role.experience_level}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Select role
+        async function selectRole(roleId, roleTitle) {
+            selectedRole = roleId;
+            
+            const roleResult = await fetchCareerRole(roleId);
+            if (roleResult.success) {
+                const role = roleResult.role;
+                
+                if (studentData) {
+                    // Calculate skill gap
+                    const gap = calculateSkillGap(studentData.skills, role.requiredSkills);
+                    
+                    // Display results
+                    displayAnalysisResults(gap, role);
+                    document.getElementById('analysisResults').style.display = 'block';
+                    
+                    // Scroll to results
+                    setTimeout(() => {
+                        document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            }
+        }
+
+        // Display analysis results
+        function displayAnalysisResults(gap, role) {
+            // Update match percentage
+            document.getElementById('matchPercentage').textContent = gap.matchPercentage + '%';
+            
+            // Display role details
+            document.getElementById('roleDetails').innerHTML = `
+                <h6>${role.title}</h6>
+                <p class="text-muted small mb-2">${role.description}</p>
+                <p class="small mb-0">
+                    <strong>Average Salary:</strong> ₹${role.averageSalary?.toLocaleString() || 'N/A'}<br>
+                    <strong>Market Demand:</strong> ${role.jobMarketDemand?.replace(/_/g, ' ')}<br>
+                    <strong>Future Relevance:</strong> ${role.futureRelevance}
+                </p>
+            `;
+
+            // Display matched skills
+            const matchedHtml = gap.matched.length > 0 
+                ? gap.matched.map(skill => `
+                    <div class="skill-gap-card matched-skill">
+                        <h6>${skill.name}</h6>
+                        <p class="small text-muted mb-2">
+                            Your level: <strong>${skill.studentLevel}</strong> | Required: <strong>${skill.requiredLevel}</strong>
+                        </p>
+                        <span class="skill-badge matched-badge">✓ Matched</span>
+                        ${skill.importance === 'critical' ? '<span class="skill-badge high-priority-badge">Critical</span>' : ''}
+                    </div>
+                `).join('')
+                : '<p class="text-muted">No matched skills yet. Start taking assessments to build your skill profile!</p>';
+            
+            document.getElementById('matchedSkills').innerHTML = matchedHtml;
+
+            // Display missing skills
+            const missingHtml = gap.missing.length > 0 
+                ? gap.missing.map(skill => `
+                    <div class="skill-gap-card missing-skill">
+                        <h6>${skill.name}</h6>
+                        <p class="small text-muted mb-2">Required level: <strong>${skill.requiredLevel}</strong></p>
+                        <div>
+                            <span class="skill-badge missing-badge">✗ Missing</span>
+                            ${skill.importance === 'critical' ? '<span class="skill-badge high-priority-badge">⚡ High Priority</span>' : ''}
+                        </div>
+                        ${skill.alternatives && skill.alternatives.length > 0 
+                            ? `<p class="small mt-2 mb-0"><strong>Alternatives:</strong> ${skill.alternatives.join(', ')}</p>`
+                            : ''
+                        }
+                    </div>
+                `).join('')
+                : '<p class="text-muted">Great! You have all the required skills!</p>';
+            
+            document.getElementById('missingSkills').innerHTML = missingHtml;
+
+            // Display improvement guidance
+            const guidance = generateImprovementGuidance(gap, role);
+            document.getElementById('improvementGuidance').innerHTML = guidance;
+        }
+
+        // Generate improvement guidance
+        function generateImprovementGuidance(gap, role) {
+            const priorities = gap.missing
+                .filter(s => s.importance === 'critical')
+                .sort((a, b) => (b.importance === 'critical' ? 1 : 0) - (a.importance === 'critical' ? 1 : 0));
+
+            const guidance = `
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <h6>🎯 Priority Learning Path</h6>
+                        <ol class="small">
+                            ${priorities.length > 0 
+                                ? priorities.slice(0, 5).map(skill => `
+                                    <li class="mb-2">
+                                        <strong>${skill.name}</strong> (${skill.requiredLevel})<br>
+                                        <span class="text-muted">Impact: ${skill.importance}</span>
+                                    </li>
+                                `).join('')
+                                : '<li class="text-muted">You\'re ready to apply! Your skills match the role.</li>'
+                            }
+                        </ol>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <h6>💡 Recommended Actions</h6>
+                        <ul class="small">
+                            <li>Take skill assessments to validate your knowledge</li>
+                            <li>Complete projects showcasing your skills</li>
+                            <li>Pursue relevant certifications</li>
+                            <li>Gain practical experience through internships</li>
+                            <li>Stay updated with industry trends</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <p class="small text-muted mb-0">
+                            <strong>Career Ready Score:</strong> ${gap.matchPercentage}% 
+                            ${gap.matchPercentage >= 80 ? '✓ Ready to apply!' : '• Work on your skills to improve readiness'}
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            return guidance;
+        }
+
+        // Logout function
+        function logout() {
+            logoutUser();
+        }
+
+        // Load data
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applications - ISOTOPES</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="student-dashboard.html">
+                <i class="fas fa-dna"></i> ISOTOPES
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="student-dashboard.html">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="student-profile.html">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="skill-assessment.html">Assessment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="opportunities.html">Opportunities</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="applications.html">Applications</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="student-profile.html">My Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="index.html" onclick="logout()">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Alert Container -->
+    <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 11;"></div>
+
+    <!-- Main Content -->
+    <div class="container-fluid py-5">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12">
+                    <h2 class="fw-bold mb-2">My Applications</h2>
+                    <p class="text-muted">Track the status of your applications</p>
+                </div>
+            </div>
+
+            <!-- Status Tabs -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <ul class="nav nav-pills" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                                All
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="applied-tab" data-bs-toggle="tab" data-bs-target="#applied" type="button" role="tab">
+                                Applied
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="shortlisted-tab" data-bs-toggle="tab" data-bs-target="#shortlisted" type="button" role="tab">
+                                Shortlisted
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">
+                                Rejected
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Applications List -->
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="all" role="tabpanel">
+                    <div id="allApplications"></div>
+                </div>
+                <div class="tab-pane fade" id="applied" role="tabpanel">
+                    <div id="appliedApplications"></div>
+                </div>
+                <div class="tab-pane fade" id="shortlisted" role="tabpanel">
+                    <div id="shortlistedApplications"></div>
+                </div>
+                <div class="tab-pane fade" id="rejected" role="tabpanel">
+                    <div id="rejectedApplications"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 ISOTOPES. Building careers through evidence-based skill intelligence.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Check if user is logged in
+        if (!isUserLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        const statusColors = {
+            'applied': 'info',
+            'shortlisted': 'warning',
+            'rejected': 'danger',
+            'accepted': 'success',
+            'offer_received': 'success',
+            'offer_accepted': 'success'
+        };
+
+        const statusIcons = {
+            'applied': 'paper-plane',
+            'shortlisted': 'star',
+            'rejected': 'times-circle',
+            'accepted': 'check-circle',
+            'offer_received': 'gift',
+            'offer_accepted': 'handshake'
+        };
+
+        // Load applications on page load
+        async function loadApplications() {
+            const result = await fetchStudentApplications();
+            if (result.success) {
+                const apps = result.applications;
+                displayApplications(apps, 'all');
+                displayApplications(apps.filter(a => a.status === 'applied'), 'applied');
+                displayApplications(apps.filter(a => a.status === 'shortlisted'), 'shortlisted');
+                displayApplications(apps.filter(a => a.status === 'rejected'), 'rejected');
+            } else {
+                showError('Failed to load applications');
+            }
+        }
+
+        // Display applications
+        function displayApplications(applications, status) {
+            const container = document.getElementById(status + 'Applications');
+            if (applications.length === 0) {
+                container.innerHTML = '<p class="text-muted">No applications found</p>';
+                return;
+            }
+
+            container.innerHTML = applications.map(app => {
+                const statusColor = statusColors[app.status] || 'secondary';
+                const statusIcon = statusIcons[app.status] || 'info-circle';
+                const appliedDate = new Date(app.applicationDate).toLocaleDateString();
+                
+                return `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="d-flex align-items-start">
+                                        <div class="me-3">
+                                            <i class="fas fa-${statusIcon} fa-2x text-${statusColor}"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="card-title mb-1">${app.opportunityId?.title || 'Opportunity'}</h5>
+                                            <p class="text-muted small mb-2">${app.companyId?.companyName || 'Company'}</p>
+                                            <p class="small mb-2">
+                                                <strong>Skill Match:</strong> ${app.skillMatch?.matchPercentage || 0}%
+                                            </p>
+                                            <p class="small text-muted mb-0">
+                                                <strong>Applied:</strong> ${appliedDate}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <span class="badge bg-${statusColor} mb-2" style="font-size: 0.9rem;">
+                                        ${app.status.replace(/_/g, ' ').toUpperCase()}
+                                    </span>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewDetails('${app._id}')">
+                                            View Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // View details
+        function viewDetails(applicationId) {
+            // Redirect to details page or show modal
+            alert('Viewing details for application ' + applicationId);
+        }
+
+        // Logout function
+        function logout() {
+            logoutUser();
+        }
+
+        // Load applications on page load
+        loadApplications();
+    </script>
+</body>
+</html>

@@ -1,7 +1,9 @@
 /**
  * ISOTOPES - Main JavaScript File
- * Handles authentication, navigation, and common functionality
+ * Handles authentication, navigation, and API calls
  */
+
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // ============================================
 // Authentication Functions
@@ -11,7 +13,7 @@
  * Check if user is logged in
  */
 function isUserLoggedIn() {
-    return localStorage.getItem('userEmail') !== null;
+    return localStorage.getItem('authToken') !== null;
 }
 
 /**
@@ -19,6 +21,7 @@ function isUserLoggedIn() {
  */
 function getCurrentUser() {
     return {
+        userId: localStorage.getItem('userId'),
         email: localStorage.getItem('userEmail'),
         role: localStorage.getItem('userRole'),
         name: localStorage.getItem('userName') || 'User'
@@ -26,9 +29,29 @@ function getCurrentUser() {
 }
 
 /**
+ * Get auth token
+ */
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+/**
+ * Get authorization headers
+ */
+function getAuthHeaders() {
+    const token = getAuthToken();
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
+/**
  * Logout user
  */
 function logoutUser() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
@@ -150,64 +173,116 @@ function showWarning(message) {
 }
 
 // ============================================
-// API Functions (Mock for now)
+// API Functions - Authentication
 // ============================================
 
 /**
- * Mock API call for login
+ * Register user
  */
-async function loginUser(email, password) {
+async function registerUser(name, email, password, role) {
     try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, confirmPassword: password, role })
+        });
+
+        const data = await response.json();
         
-        // Store user data (in real app, this comes from backend)
-        localStorage.setItem('userEmail', email);
-        localStorage.setItem('userRole', 'student');
-        localStorage.setItem('userName', email.split('@')[0]);
-        
-        return { success: true, message: 'Login successful' };
+        if (!response.ok) {
+            throw new Error(data.error || 'Registration failed');
+        }
+
+        // Store user data
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userRole', data.user.role);
+        localStorage.setItem('userName', data.user.name);
+
+        return { success: true, message: data.message };
     } catch (error) {
-        return { success: false, message: 'Login failed' };
+        console.error('Registration error:', error);
+        return { success: false, message: error.message };
     }
 }
 
 /**
- * Mock API call for registration
+ * Login user
  */
-async function registerUser(name, email, password, role) {
+async function loginUser(email, password) {
     try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
         
+        if (!response.ok) {
+            throw new Error(data.error || 'Login failed');
+        }
+
         // Store user data
-        localStorage.setItem('userEmail', email);
-        localStorage.setItem('userRole', role);
-        localStorage.setItem('userName', name);
-        
-        return { success: true, message: 'Registration successful' };
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userRole', data.user.role);
+        localStorage.setItem('userName', data.user.name);
+
+        return { success: true, message: data.message };
     } catch (error) {
-        return { success: false, message: 'Registration failed' };
+        console.error('Login error:', error);
+        return { success: false, message: error.message };
     }
 }
+
+/**
+ * Get current user info from backend
+ */
+async function fetchCurrentUser() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch user');
+        }
+
+        return { success: true, user: data.user };
+    } catch (error) {
+        console.error('Fetch user error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================
+// API Functions - Student Profile
+// ============================================
 
 /**
  * Fetch student profile
  */
 async function fetchStudentProfile() {
     try {
-        // Mock data - replace with actual API call
-        return {
-            name: 'John Doe',
-            email: 'john@example.com',
-            phone: '+91 1234567890',
-            location: 'Bangalore, India',
-            bio: 'Passionate about full-stack development',
-            skills: ['Python', 'JavaScript', 'React', 'Django']
-        };
+        const response = await fetch(`${API_BASE_URL}/students/profile`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch profile');
+        }
+
+        return { success: true, student: data.student };
     } catch (error) {
-        console.error('Error fetching profile:', error);
-        return null;
+        console.error('Fetch profile error:', error);
+        return { success: false, error: error.message };
     }
 }
 
@@ -216,79 +291,394 @@ async function fetchStudentProfile() {
  */
 async function updateStudentProfile(profileData) {
     try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const response = await fetch(`${API_BASE_URL}/students/profile`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(profileData)
+        });
+
+        const data = await response.json();
         
-        return { success: true, message: 'Profile updated successfully' };
-    } catch (error) {
-        return { success: false, message: 'Profile update failed' };
-    }
-}
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to update profile');
+        }
 
-// ============================================
-// Skill Functions
-// ============================================
-
-/**
- * Fetch user skills
- */
-async function fetchUserSkills() {
-    try {
-        // Mock data
-        return [
-            { name: 'Python', score: 78, category: 'Programming' },
-            { name: 'Data Structures', score: 72, category: 'Programming' },
-            { name: 'Web Development', score: 65, category: 'Web' },
-            { name: 'Machine Learning', score: 55, category: 'Data Science' },
-            { name: 'Communication', score: 45, category: 'Soft Skills' }
-        ];
+        return { success: true, student: data.student };
     } catch (error) {
-        console.error('Error fetching skills:', error);
-        return [];
+        console.error('Update profile error:', error);
+        return { success: false, error: error.message };
     }
 }
 
 /**
- * Calculate skill level
+ * Add education
  */
-function getSkillLevel(score) {
-    if (score >= 80) return 'Expert';
-    if (score >= 60) return 'Intermediate';
-    if (score >= 40) return 'Beginner';
-    return 'Novice';
-}
-
-/**
- * Get skill badge color
- */
-function getSkillColor(score) {
-    if (score >= 80) return 'success';
-    if (score >= 60) return 'info';
-    if (score >= 40) return 'warning';
-    return 'danger';
-}
-
-// ============================================
-// Assessment Functions
-// ============================================
-
-/**
- * Submit assessment answers
- */
-async function submitAssessment(assessmentType, answers) {
+async function addEducation(educationData) {
     try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const response = await fetch(`${API_BASE_URL}/students/education`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(educationData)
+        });
+
+        const data = await response.json();
         
-        const score = Math.floor(Math.random() * 40) + 60; // Random score 60-100
-        
-        return {
-            success: true,
-            score: score,
-            message: `Assessment completed with score: ${score}%`
-        };
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to add education');
+        }
+
+        return { success: true, student: data.student };
     } catch (error) {
-        return { success: false, message: 'Assessment submission failed' };
+        console.error('Add education error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Add project
+ */
+async function addProject(projectData) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/students/projects`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(projectData)
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to add project');
+        }
+
+        return { success: true, student: data.student };
+    } catch (error) {
+        console.error('Add project error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Add skill
+ */
+async function addSkill(name, level = 'beginner') {
+    try {
+        const response = await fetch(`${API_BASE_URL}/students/skills`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ name, level })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to add skill');
+        }
+
+        return { success: true, student: data.student };
+    } catch (error) {
+        console.error('Add skill error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================
+// API Functions - Assessments
+// ============================================
+
+/**
+ * Fetch all assessments
+ */
+async function fetchAssessments() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/assessments`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch assessments');
+        }
+
+        return { success: true, assessments: data.assessments };
+    } catch (error) {
+        console.error('Fetch assessments error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Fetch specific assessment
+ */
+async function fetchAssessment(id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/assessments/${id}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch assessment');
+        }
+
+        return { success: true, assessment: data.assessment };
+    } catch (error) {
+        console.error('Fetch assessment error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Submit assessment
+ */
+async function submitAssessment(assessmentId, answers, timeSpent) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/assessments/${assessmentId}/submit`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ answers, timeSpent })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to submit assessment');
+        }
+
+        return { success: true, result: data.result };
+    } catch (error) {
+        console.error('Submit assessment error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================
+// API Functions - Career Roles
+// ============================================
+
+/**
+ * Fetch all career roles
+ */
+async function fetchCareerRoles() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/career-roles`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch career roles');
+        }
+
+        return { success: true, roles: data.roles };
+    } catch (error) {
+        console.error('Fetch career roles error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Fetch specific career role
+ */
+async function fetchCareerRole(id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/career-roles/${id}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch career role');
+        }
+
+        return { success: true, role: data.role };
+    } catch (error) {
+        console.error('Fetch career role error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Select target career role
+ */
+async function selectCareerRole(roleId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/career-roles/select/${roleId}`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to select career role');
+        }
+
+        return { success: true, student: data.student };
+    } catch (error) {
+        console.error('Select career role error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Calculate skill gap
+ */
+function calculateSkillGap(studentSkills, roleRequiredSkills) {
+    const studentSkillNames = studentSkills.map(s => s.name.toLowerCase());
+    
+    const matched = [];
+    const missing = [];
+    const strong = [];
+    const weak = [];
+
+    roleRequiredSkills.forEach(roleSkill => {
+        const studentSkill = studentSkills.find(
+            s => s.name.toLowerCase() === roleSkill.name.toLowerCase()
+        );
+
+        if (studentSkill) {
+            matched.push({
+                name: roleSkill.name,
+                studentLevel: studentSkill.level,
+                requiredLevel: roleSkill.level,
+                importance: roleSkill.importance
+            });
+
+            if (roleSkill.importance === 'critical') {
+                strong.push(roleSkill.name);
+            }
+        } else {
+            missing.push({
+                name: roleSkill.name,
+                requiredLevel: roleSkill.level,
+                importance: roleSkill.importance,
+                alternatives: roleSkill.alternatives
+            });
+
+            if (roleSkill.importance === 'critical') {
+                weak.push(roleSkill.name);
+            }
+        }
+    });
+
+    return {
+        matchPercentage: Math.round((matched.length / roleRequiredSkills.length) * 100),
+        matched,
+        missing,
+        strong,
+        weak
+    };
+}
+
+// ============================================
+// API Functions - Opportunities
+// ============================================
+
+/**
+ * Fetch opportunities
+ */
+async function fetchOpportunities(filters = {}) {
+    try {
+        const queryParams = new URLSearchParams(filters).toString();
+        const url = queryParams ? `${API_BASE_URL}/opportunities?${queryParams}` : `${API_BASE_URL}/opportunities`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch opportunities');
+        }
+
+        return { success: true, opportunities: data.opportunities };
+    } catch (error) {
+        console.error('Fetch opportunities error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Fetch specific opportunity
+ */
+async function fetchOpportunity(id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/opportunities/${id}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch opportunity');
+        }
+
+        return { success: true, opportunity: data.opportunity };
+    } catch (error) {
+        console.error('Fetch opportunity error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Create opportunity (industry only)
+ */
+async function createOpportunity(opportunityData) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/opportunities`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(opportunityData)
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create opportunity');
+        }
+
+        return { success: true, opportunity: data.opportunity };
+    } catch (error) {
+        console.error('Create opportunity error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================
+// API Functions - Applications
+// ============================================
+
+/**
+ * Apply for opportunity
+ */
+async function applyForOpportunity(opportunityId, coverLetter = '') {
+    try {
+        const response = await fetch(`${API_BASE_URL}/applications`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ opportunityId, coverLetter })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to apply');
+        }
+
+        return { success: true, application: data.application };
+    } catch (error) {
+        console.error('Apply error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Fetch student's applications
+ */
+async function fetchStudentApplications() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/applications/student`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch applications');
+        }
+
+        return { success: true, applications: data.applications };
+    } catch (error) {
+        console.error('Fetch applications error:', error);
+        return { success: false, error: error.message };
     }
 }
 
