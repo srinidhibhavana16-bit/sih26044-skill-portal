@@ -182,7 +182,9 @@
             if (result.success) {
                 showSuccess(result.message);
                 setTimeout(() => {
-                    window.location.href = 'student-dashboard.html';
+                    window.location.href = getCurrentUser().role === 'industry'
+                        ? 'industry-dashboard.html'
+                        : 'student-dashboard.html';
                 }, 500);
             } else {
                 showError(result.message);
@@ -216,7 +218,7 @@
             if (result.success) {
                 showSuccess(result.message);
                 setTimeout(() => {
-                    const redirectPage = role === 'student' ? 'student-dashboard.html' : 'student-dashboard.html';
+                    const redirectPage = role === 'industry' ? 'industry-dashboard.html' : 'student-dashboard.html';
                     window.location.href = redirectPage;
                 }, 500);
             } else {

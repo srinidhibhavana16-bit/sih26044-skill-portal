@@ -5,6 +5,13 @@
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
+function getApiErrorMessage(error, fallback) {
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        return 'Cannot reach the backend. Start MongoDB, then run the backend on port 5000.';
+    }
+    return error.message || fallback;
+}
+
 // ============================================
 // Authentication Functions
 // ============================================
@@ -203,7 +210,7 @@ async function registerUser(name, email, password, role) {
         return { success: true, message: data.message };
     } catch (error) {
         console.error('Registration error:', error);
-        return { success: false, message: error.message };
+        return { success: false, message: getApiErrorMessage(error, 'Registration failed') };
     }
 }
 
@@ -234,7 +241,7 @@ async function loginUser(email, password) {
         return { success: true, message: data.message };
     } catch (error) {
         console.error('Login error:', error);
-        return { success: false, message: error.message };
+        return { success: false, message: getApiErrorMessage(error, 'Login failed') };
     }
 }
 
@@ -279,7 +286,7 @@ async function fetchStudentProfile() {
             throw new Error(data.error || 'Failed to fetch profile');
         }
 
-        return { success: true, student: data.student };
+        return { success: true, student: data.student, user: data.user };
     } catch (error) {
         console.error('Fetch profile error:', error);
         return { success: false, error: error.message };
@@ -303,7 +310,7 @@ async function updateStudentProfile(profileData) {
             throw new Error(data.error || 'Failed to update profile');
         }
 
-        return { success: true, student: data.student };
+        return { success: true, student: data.student, user: data.user };
     } catch (error) {
         console.error('Update profile error:', error);
         return { success: false, error: error.message };
@@ -333,6 +340,29 @@ async function addEducation(educationData) {
         return { success: false, error: error.message };
     }
 }
+
+async function studentProfileRequest(path, method, payload) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/students/${path}`, {
+            method,
+            headers: getAuthHeaders(),
+            body: payload ? JSON.stringify(payload) : undefined
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to save profile information');
+        return { success: true, student: data.student };
+    } catch (error) {
+        console.error('Student profile request error:', error);
+        return { success: false, error: getApiErrorMessage(error, 'Unable to save profile information') };
+    }
+}
+
+const addExperience = (data) => studentProfileRequest('experience', 'POST', data);
+const addCertification = (data) => studentProfileRequest('certifications', 'POST', data);
+const deleteEducation = (id) => studentProfileRequest(`education/${id}`, 'DELETE');
+const deleteExperience = (id) => studentProfileRequest(`experience/${id}`, 'DELETE');
+const deleteProject = (id) => studentProfileRequest(`projects/${id}`, 'DELETE');
+const deleteCertification = (id) => studentProfileRequest(`certifications/${id}`, 'DELETE');
 
 /**
  * Add project
@@ -853,6 +883,14 @@ if (typeof module !== 'undefined' && module.exports) {
         registerUser,
         fetchStudentProfile,
         updateStudentProfile,
+        addEducation,
+        addExperience,
+        addProject,
+        addCertification,
+        deleteEducation,
+        deleteExperience,
+        deleteProject,
+        deleteCertification,
         fetchUserSkills
     };
 }

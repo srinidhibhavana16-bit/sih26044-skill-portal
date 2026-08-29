@@ -1,7 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
+const User = require('../models/User');
 const { auth, authorize } = require('../middleware/auth');
+
+function validateEducation({ degree, institution, startDate, endDate, cgpa }) {
+  if (!degree || !degree.trim() || !institution || !institution.trim()) {
+    return 'Degree and institution are required';
+  }
+  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    return 'End date must be after start date';
+  }
+  if (cgpa !== undefined && cgpa !== '' && (!Number.isFinite(Number(cgpa)) || Number(cgpa) < 0 || Number(cgpa) > 10)) {
+    return 'CGPA must be between 0 and 10';
+  }
+  return null;
+}
 
 // Get student profile
 router.get('/profile', auth, authorize('student'), async (req, res) => {
@@ -10,7 +24,8 @@ router.get('/profile', auth, authorize('student'), async (req, res) => {
     if (!student) {
       return res.status(404).json({ error: 'Student profile not found' });
     }
-    res.json({ success: true, student });
+    const user = await User.findById(req.user.userId).select('name email phone location bio');
+    res.json({ success: true, student, user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch profile: ' + err.message });
   }
@@ -19,13 +34,27 @@ router.get('/profile', auth, authorize('student'), async (req, res) => {
 // Update basic info
 router.put('/profile', auth, authorize('student'), async (req, res) => {
   try {
-    const { headline, bio } = req.body;
+    const { headline, name, phone, location, bio } = req.body;
+    if (name !== undefined && !name.trim()) {
+      return res.status(400).json({ error: 'Name cannot be empty' });
+    }
+
     const student = await Student.findOneAndUpdate(
       { userId: req.user.userId },
-      { headline, bio, updatedAt: Date.now() },
+      { headline, updatedAt: Date.now() },
       { new: true }
     );
-    res.json({ success: true, student });
+    if (!student) {
+      return res.status(404).json({ error: 'Student profile not found' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name, phone, location, bio, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    ).select('name email phone location bio');
+
+    res.json({ success: true, student, user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update profile: ' + err.message });
   }
@@ -35,6 +64,8 @@ router.put('/profile', auth, authorize('student'), async (req, res) => {
 router.post('/education', auth, authorize('student'), async (req, res) => {
   try {
     const { degree, institution, startDate, endDate, cgpa, description } = req.body;
+    const validationError = validateEducation({ degree, institution, startDate, endDate, cgpa });
+    if (validationError) return res.status(400).json({ error: validationError });
     const student = await Student.findOneAndUpdate(
       { userId: req.user.userId },
       {
@@ -45,6 +76,7 @@ router.post('/education', auth, authorize('student'), async (req, res) => {
       },
       { new: true }
     );
+    if (!student) return res.status(404).json({ error: 'Student profile not found' });
     res.status(201).json({ success: true, student });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add education: ' + err.message });
@@ -55,6 +87,8 @@ router.post('/education', auth, authorize('student'), async (req, res) => {
 router.put('/education/:id', auth, authorize('student'), async (req, res) => {
   try {
     const { degree, institution, startDate, endDate, cgpa, description } = req.body;
+    const validationError = validateEducation({ degree, institution, startDate, endDate, cgpa });
+    if (validationError) return res.status(400).json({ error: validationError });
     const student = await Student.findOneAndUpdate(
       { userId: req.user.userId, 'education._id': req.params.id },
       {
@@ -70,6 +104,7 @@ router.put('/education/:id', auth, authorize('student'), async (req, res) => {
       },
       { new: true }
     );
+    if (!student) return res.status(404).json({ error: 'Education record not found' });
     res.json({ success: true, student });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update education: ' + err.message });
@@ -80,10 +115,11 @@ router.put('/education/:id', auth, authorize('student'), async (req, res) => {
 router.delete('/education/:id', auth, authorize('student'), async (req, res) => {
   try {
     const student = await Student.findOneAndUpdate(
-      { userId: req.user.userId },
+      { userId: req.user.userId, 'education._id': req.params.id },
       { $pull: { education: { _id: req.params.id } }, updatedAt: Date.now() },
       { new: true }
     );
+    if (!student) return res.status(404).json({ error: 'Education record not found' });
     res.json({ success: true, student });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete education: ' + err.message });
