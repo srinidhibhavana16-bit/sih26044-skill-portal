@@ -3,6 +3,7 @@ const router = express.Router();
 const Student = require('../models/Student');
 const User = require('../models/User');
 const CareerRole = require('../models/CareerRole');
+const { AssessmentResult } = require('../models/Assessment');
 const { auth, authorize } = require('../middleware/auth');
 
 async function getAuthenticatedStudent(userId) {
@@ -70,10 +71,23 @@ async function saveProfile(req, res) {
     }
     if (skills !== undefined) {
       if (!Array.isArray(skills)) return res.status(400).json({ success: false, error: 'skills must be an array' });
+      const existingStudent = await Student.findOne({ userId: req.user.userId }).select('skills');
+      const existingSkills = new Map((existingStudent?.skills || []).map(skill => [skill.name.toLowerCase(), skill.toObject()]));
       update.skills = skills.map(skill => {
-        if (typeof skill === 'string') return { name: skill.trim(), selfDeclaredLevel: 'beginner', level: 'beginner' };
-        return { ...skill, name: skill.name?.trim(), selfDeclaredLevel: skill.selfDeclaredLevel || skill.level || 'beginner', level: skill.level || skill.selfDeclaredLevel || 'beginner' };
-      }).filter(skill => skill.name);
+        const input = typeof skill === 'string' ? { name: skill } : skill;
+        const name = input.name?.trim();
+        if (!name) return null;
+        const existing = existingSkills.get(name.toLowerCase());
+        const selfDeclaredLevel = input.selfDeclaredLevel || input.level || existing?.selfDeclaredLevel || 'beginner';
+        return {
+          ...(existing || {}),
+          name,
+          selfDeclaredLevel,
+          level: existing?.level || input.level || selfDeclaredLevel,
+          wantToImprove: input.wantToImprove === undefined ? Boolean(existing?.wantToImprove) : Boolean(input.wantToImprove),
+          evidence: existing?.evidence || []
+        };
+      }).filter(Boolean);
     }
     const roleId = targetRoleId || primaryTargetRole;
     if (roleId !== undefined) {
@@ -98,6 +112,62 @@ async function saveProfile(req, res) {
 
 router.get('/me', auth, authorize('student'), readProfile);
 router.put('/me/profile', auth, authorize('student'), saveProfile);
+
+router.get('/me/skill-analysis', auth, authorize('student'), async (req, res) => {
+  try {
+    const student = await Student.findOne({ userId: req.user.userId }).populate('targetRole');
+    if (!student) return res.status(404).json({ error: 'Student profile not found' });
+    const results = await AssessmentResult.find({ studentId: student._id }).sort({ completedAt: -1 });
+    const latestScores = new Map();
+    for (const result of results) {
+      for (const item of result.skillScores || []) {
+        const key = item.skill.toLowerCase();
+        if (!latestScores.has(key)) latestScores.set(key, { skill: item.skill, score: item.score, assessedAt: result.completedAt });
+      }
+    }
+    const declared = new Map(student.skills.map(skill => [skill.name.toLowerCase(), skill]));
+    const strongSkills = [...latestScores.values()].filter(item => item.score >= 75);
+    const skillsNeedingImprovement = [...latestScores.values()].filter(item => item.score < 60);
+    const requiredSkills = student.targetRole?.requiredSkills || [];
+    const missingSkills = requiredSkills.filter(required => !declared.has(required.name.toLowerCase()) && !latestScores.has(required.name.toLowerCase())).map(required => ({
+      skill: required.name,
+      requiredLevel: required.level,
+      importance: required.importance
+    }));
+    const prioritySkills = [
+      ...skillsNeedingImprovement.map(item => ({ skill: item.skill, reason: `Assessment evidence is ${item.score}%`, score: item.score })),
+      ...missingSkills.filter(item => ['critical', 'high'].includes(item.importance)).map(item => ({ skill: item.skill, reason: `${item.importance} requirement for ${student.targetRole.title}`, score: null }))
+    ];
+    for (const skill of student.skills.filter(item => item.wantToImprove)) {
+      if (!prioritySkills.some(item => item.skill.toLowerCase() === skill.name.toLowerCase())) {
+        prioritySkills.push({ skill: skill.name, reason: 'Marked by you as a skill to improve', score: latestScores.get(skill.name.toLowerCase())?.score ?? null });
+      }
+    }
+    const recommendations = prioritySkills.slice(0, 5).map(item => {
+      const target = student.targetRole ? ` for your ${student.targetRole.title} goal` : '';
+      return {
+        skill: item.skill,
+        message: item.score === null
+          ? `Build evidence in ${item.skill}${target}; no verified assessment evidence is available yet.`
+          : `Prioritize ${item.skill}${target} because your latest verified assessment score is ${item.score}%.`
+      };
+    });
+    res.json({
+      success: true,
+      analysis: {
+        targetRole: student.targetRole ? { id: student.targetRole._id, title: student.targetRole.title } : null,
+        strongSkills,
+        skillsNeedingImprovement,
+        missingSkills,
+        prioritySkills,
+        recommendations,
+        hasAssessmentEvidence: results.length > 0
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to analyze skills: ' + err.message });
+  }
+});
 
 function validateEducation({ degree, institution, startDate, endDate, cgpa }) {
   if (!degree || !degree.trim() || !institution || !institution.trim()) {
@@ -292,14 +362,18 @@ router.delete('/projects/:id', auth, authorize('student'), async (req, res) => {
 router.post('/certifications', auth, authorize('student'), async (req, res) => {
   try {
     const { name, provider, issueDate, expiryDate, link } = req.body;
+    if (!name || !String(name).trim() || !provider || !String(provider).trim()) {
+      return res.status(400).json({ error: 'Certification name and provider are required' });
+    }
     const student = await Student.findOneAndUpdate(
       { userId: req.user.userId },
       {
-        $push: { certifications: { name, provider, issueDate, expiryDate, link } },
+        $push: { certifications: { name: String(name).trim(), provider: String(provider).trim(), issueDate, expiryDate, link } },
         updatedAt: Date.now()
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
+    if (!student) return res.status(404).json({ error: 'Student profile not found' });
     res.status(201).json({ success: true, student });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add certification: ' + err.message });
@@ -323,7 +397,7 @@ router.delete('/certifications/:id', auth, authorize('student'), async (req, res
 // Add skill
 router.post('/skills', auth, authorize('student'), async (req, res) => {
   try {
-    const { name, level = 'beginner' } = req.body;
+    const { name, level = 'beginner', wantToImprove = false } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Skill name is required' });
     }
@@ -339,7 +413,7 @@ router.post('/skills', auth, authorize('student'), async (req, res) => {
     const student = await Student.findOneAndUpdate(
       { userId: req.user.userId },
       {
-        $push: { skills: { name: name.trim(), level, evidence: [], endorsements: 0 } },
+        $push: { skills: { name: name.trim(), selfDeclaredLevel: level, level, wantToImprove: Boolean(wantToImprove), evidence: [], endorsements: 0 } },
         updatedAt: Date.now()
       },
       { new: true }

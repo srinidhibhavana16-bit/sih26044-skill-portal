@@ -85,6 +85,10 @@ const StudentSchema = new mongoose.Schema({
         enum: ['beginner', 'intermediate', 'advanced', 'expert'],
         default: 'beginner'
       },
+      wantToImprove: {
+        type: Boolean,
+        default: false
+      },
       endorsements: {
         type: Number,
         default: 0
