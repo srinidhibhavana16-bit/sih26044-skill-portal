@@ -548,6 +548,10 @@ async function selectCareerRole(roleId) {
  */
 function calculateSkillGap(studentSkills, roleRequiredSkills) {
     const studentSkillNames = studentSkills.map(s => s.name.toLowerCase());
+
+    if (roleRequiredSkills.length === 0) {
+        return { matchPercentage: 100, matched: [], missing: [], strong: [], weak: [] };
+    }
     
     const matched = [];
     const missing = [];

@@ -14,6 +14,17 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get student assessment results
+router.get('/results/:studentId', auth, async (req, res) => {
+  try {
+    const results = await AssessmentResult.find({ studentId: req.params.studentId })
+      .populate('assessmentId', 'title category');
+    res.json({ success: true, results });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch results: ' + err.message });
+  }
+});
+
 // Get specific assessment
 router.get('/:id', async (req, res) => {
   try {
@@ -76,9 +87,14 @@ router.post('/:id/submit', auth, authorize('student'), async (req, res) => {
       return { skill, score: percent, level };
     });
 
+    const student = await Student.findOne({ userId: req.user.userId });
+    if (!student) {
+      return res.status(404).json({ error: 'Student profile not found' });
+    }
+
     // Create result
     const result = new AssessmentResult({
-      studentId: req.user.userId,
+      studentId: student._id,
       assessmentId: assessment._id,
       completedAt: Date.now(),
       timeSpent,
@@ -93,11 +109,7 @@ router.post('/:id/submit', auth, authorize('student'), async (req, res) => {
     await result.save();
 
     // Update student profile with assessment results
-    const student = await Student.findOneAndUpdate(
-      { userId: req.user.userId },
-      { $push: { assessmentResults: result._id } },
-      { new: true }
-    );
+    student.assessmentResults.push(result._id);
 
     // Update skills based on assessment
     skillScoresArray.forEach(skillData => {
@@ -139,17 +151,6 @@ router.post('/:id/submit', auth, authorize('student'), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to submit assessment: ' + err.message });
-  }
-});
-
-// Get student assessment results
-router.get('/results/:studentId', auth, async (req, res) => {
-  try {
-    const results = await AssessmentResult.find({ studentId: req.params.studentId })
-      .populate('assessmentId', 'title category');
-    res.json({ success: true, results });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch results: ' + err.message });
   }
 });
 
