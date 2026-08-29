@@ -5,6 +5,10 @@
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
+function escapeHtml(value = '') {
+    return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+}
+
 function getApiErrorMessage(error, fallback) {
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
         return 'Cannot reach the backend. Start MongoDB, then run the backend on port 5000.';
@@ -276,7 +280,7 @@ async function fetchCurrentUser() {
  */
 async function fetchStudentProfile() {
     try {
-        const response = await fetch(`${API_BASE_URL}/students/profile`, {
+        const response = await fetch(`${API_BASE_URL}/students/me`, {
             headers: getAuthHeaders()
         });
 
@@ -298,7 +302,7 @@ async function fetchStudentProfile() {
  */
 async function updateStudentProfile(profileData) {
     try {
-        const response = await fetch(`${API_BASE_URL}/students/profile`, {
+        const response = await fetch(`${API_BASE_URL}/students/me/profile`, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify(profileData)
@@ -474,6 +478,34 @@ async function submitAssessment(assessmentId, answers, timeSpent) {
         return { success: true, result: data.result };
     } catch (error) {
         console.error('Submit assessment error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function generateAssessment(skills) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/assessments/generate`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ skills })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Assessment generation failed');
+        return { success: true, assessment: data.assessment };
+    } catch (error) {
+        console.error('Generate assessment error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function fetchMyAssessmentResults() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/assessments/results/me`, { headers: getAuthHeaders() });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch assessment results');
+        return { success: true, results: data.results };
+    } catch (error) {
+        console.error('Fetch assessment results error:', error);
         return { success: false, error: error.message };
     }
 }
@@ -891,6 +923,8 @@ if (typeof module !== 'undefined' && module.exports) {
         addExperience,
         addProject,
         addCertification,
+        generateAssessment,
+        fetchMyAssessmentResults,
         deleteEducation,
         deleteExperience,
         deleteProject,

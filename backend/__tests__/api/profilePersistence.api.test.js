@@ -9,6 +9,38 @@ app.use('/api/students', require('../../routes/students'));
 describe('Student profile persistence', () => {
   let token;
 
+  test('persists academic details, selected skills, and target role through current-student endpoints', async () => {
+    const careerRole = await require('../../models/CareerRole').create({ title: 'Backend Developer' });
+    const registration = await request(app).post('/api/auth/register').send({
+      name: 'Profile Workflow Student',
+      email: 'profile-workflow@example.com',
+      password: 'SecurePass123',
+      confirmPassword: 'SecurePass123',
+      role: 'student'
+    });
+
+    const save = await request(app).put('/api/students/me/profile')
+      .set('Authorization', `Bearer ${registration.body.token}`)
+      .send({
+        degree: 'B.Tech',
+        branch: 'CSE',
+        currentYear: 2,
+        skills: [
+          { name: 'Java', selfDeclaredLevel: 'intermediate' },
+          { name: 'SQL', selfDeclaredLevel: 'beginner' }
+        ],
+        targetRoleId: careerRole._id
+      });
+
+    expect(save.status).toBe(200);
+    const profile = await request(app).get('/api/students/me')
+      .set('Authorization', `Bearer ${registration.body.token}`);
+    expect(profile.status).toBe(200);
+    expect(profile.body.student).toMatchObject({ degree: 'B.Tech', branch: 'CSE', currentYear: 2 });
+    expect(profile.body.student.skills.map(skill => skill.name)).toEqual(['Java', 'SQL']);
+    expect(profile.body.student.primaryTargetRole.title).toBe('Backend Developer');
+  });
+
   beforeEach(async () => {
     const response = await request(app).post('/api/auth/register').send({
       name: 'Asha Rao',
@@ -23,12 +55,13 @@ describe('Student profile persistence', () => {
   test('saves basic information and returns it on a later profile request', async () => {
     const save = await request(app).put('/api/students/profile')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Asha Rao', phone: '9876543210', location: 'Bengaluru', bio: 'Aspiring developer', headline: 'CS Student' });
+      .send({ name: 'Asha Rao', contactEmail: 'contact@example.com', phone: '9876543210', location: 'Bengaluru', bio: 'Aspiring developer', headline: 'CS Student' });
 
     expect(save.status).toBe(200);
     const profile = await request(app).get('/api/students/profile').set('Authorization', `Bearer ${token}`);
     expect(profile.status).toBe(200);
     expect(profile.body.user).toMatchObject({ name: 'Asha Rao', location: 'Bengaluru', bio: 'Aspiring developer' });
+    expect(profile.body.student.contactEmail).toBe('contact@example.com');
     expect(profile.body.student.headline).toBe('CS Student');
   });
 
