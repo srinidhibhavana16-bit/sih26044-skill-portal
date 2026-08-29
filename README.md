@@ -1,5 +1,3 @@
-Below is a complete starter `README.md` you can copy directly into your GitHub repository.
-
 ````md
 # ISOTOPES 🚀
 ## SIH26044 — Portal for Academia–Industry Collaboration
@@ -932,3 +930,4 @@ This project is being developed as part of **Smart India Hackathon — SIH26044*
 # ⭐ ISOTOPES
 
 ### Learn. Demonstrate. Analyze. Improve. Connect. Grow.
+````
