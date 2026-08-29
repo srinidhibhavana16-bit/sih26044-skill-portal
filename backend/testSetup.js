@@ -5,6 +5,7 @@
 
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
+const path = require('path');
 
 let mongoServer;
 
@@ -12,7 +13,9 @@ let mongoServer;
  * Start in-memory MongoDB before tests
  */
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create({
+    binary: { downloadDir: path.join(__dirname, '.cache', 'mongodb-binaries') }
+  });
   const mongoUri = mongoServer.getUri();
   
   await mongoose.connect(mongoUri, {

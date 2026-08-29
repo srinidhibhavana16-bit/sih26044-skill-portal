@@ -16,10 +16,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/isotopes')
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch((err) => console.error('❌ MongoDB Connection Error:', err));
+const connectDatabase = () => mongoose.connect(
+  process.env.MONGODB_URI || 'mongodb://localhost:27017/isotopes'
+);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -53,11 +52,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Only connect and listen when this file is started directly. This keeps the
+// Express app reusable by Supertest and prevents tests from opening a second
+// database connection or HTTP server.
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  connectDatabase()
+    .then(() => {
+      console.log('✅ MongoDB Connected');
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+        console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+      });
+    })
+    .catch((err) => {
+      console.error('❌ MongoDB Connection Error:', err);
+      process.exitCode = 1;
+    });
+}
 
 module.exports = app;
+module.exports.connectDatabase = connectDatabase;

@@ -190,10 +190,22 @@ router.delete('/certifications/:id', auth, authorize('student'), async (req, res
 router.post('/skills', auth, authorize('student'), async (req, res) => {
   try {
     const { name, level = 'beginner' } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Skill name is required' });
+    }
+
+    const existingStudent = await Student.findOne({ userId: req.user.userId });
+    if (!existingStudent) {
+      return res.status(404).json({ error: 'Student profile not found' });
+    }
+    if (existingStudent.skills.some((skill) => skill.name.toLowerCase() === name.trim().toLowerCase())) {
+      return res.status(400).json({ error: 'This skill is already on your profile' });
+    }
+
     const student = await Student.findOneAndUpdate(
       { userId: req.user.userId },
       {
-        $push: { skills: { name, level, evidence: [], endorsements: 0 } },
+        $push: { skills: { name: name.trim(), level, evidence: [], endorsements: 0 } },
         updatedAt: Date.now()
       },
       { new: true }

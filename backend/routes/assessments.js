@@ -31,10 +31,16 @@ router.get('/:id', async (req, res) => {
 router.post('/:id/submit', auth, authorize('student'), async (req, res) => {
   try {
     const { answers, timeSpent } = req.body;
+    if (!Array.isArray(answers)) {
+      return res.status(400).json({ error: 'Answers must be an array' });
+    }
     const assessment = await Assessment.findById(req.params.id);
 
     if (!assessment) {
       return res.status(404).json({ error: 'Assessment not found' });
+    }
+    if (answers.length !== assessment.questions.length) {
+      return res.status(400).json({ error: 'Please submit an answer for every question' });
     }
 
     // Calculate score
@@ -47,12 +53,13 @@ router.post('/:id/submit', auth, authorize('student'), async (req, res) => {
 
     answers.forEach((answer, index) => {
       const question = assessment.questions[index];
-      if (question && answer === question.correctAnswer) {
+      if (!question) return;
+      const skill = question.skillTested;
+      if (skillScores[skill]) skillScores[skill].count += 1;
+      if (answer === question.correctAnswer) {
         correctAnswers++;
-        const skill = question.skillTested;
         if (skillScores[skill]) {
           skillScores[skill].score += 1;
-          skillScores[skill].count += 1;
         }
       }
     });
@@ -62,7 +69,7 @@ router.post('/:id/submit', auth, authorize('student'), async (req, res) => {
 
     // Calculate skill levels
     const skillScoresArray = Object.entries(skillScores).map(([skill, data]) => {
-      const percent = Math.round((data.score / data.count) * 100);
+      const percent = data.count === 0 ? 0 : Math.round((data.score / data.count) * 100);
       let level = 'beginner';
       if (percent >= 75) level = 'advanced';
       else if (percent >= 50) level = 'intermediate';
