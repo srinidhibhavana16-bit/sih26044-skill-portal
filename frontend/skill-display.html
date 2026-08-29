@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Twin - ISOTOPES</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="student-dashboard.html">
+                <i class="fas fa-dna"></i> ISOTOPES
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="student-dashboard.html">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="student-profile.html">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="skill-assessment.html">Assessment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="skill-display.html">Skills</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="student-profile.html">My Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="index.html" onclick="logout()">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="fw-bold mb-2">Your Skill Twin</h2>
+                <p class="text-muted">Evidence-based digital representation of your demonstrated capabilities</p>
+            </div>
+        </div>
+
+        <!-- Skill Summary -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-3 text-center">
+                <div class="stat-box">
+                    <div class="stat-value">72%</div>
+                    <div class="stat-label">Overall Score</div>
+                </div>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-box">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Skills Identified</div>
+                </div>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-box">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Assessments</div>
+                </div>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-box">
+                    <div class="stat-value">Strong</div>
+                    <div class="stat-label">Profile Status</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Skills Overview -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-gradient text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Skills Breakdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Skill 1 -->
+                        <div class="skill-section mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Python Programming</h6>
+                                <span class="badge bg-success">78%</span>
+                            </div>
+                            <div class="progress mb-2" role="progressbar" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: 78%"></div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle text-success me-1"></i>Good assessment performance
+                                <br>
+                                <i class="fas fa-check-circle text-success me-1"></i>Multiple relevant projects
+                                <br>
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Needs: Advanced problem solving
+                            </small>
+                        </div>
+
+                        <!-- Skill 2 -->
+                        <div class="skill-section mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Data Structures</h6>
+                                <span class="badge bg-success">72%</span>
+                            </div>
+                            <div class="progress mb-2" role="progressbar" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: 72%"></div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle text-success me-1"></i>Assessment score: 85/100
+                                <br>
+                                <i class="fas fa-check-circle text-success me-1"></i>Applied in 2 projects
+                                <br>
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Needs: Graph algorithms
+                            </small>
+                        </div>
+
+                        <!-- Skill 3 -->
+                        <div class="skill-section mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Web Development</h6>
+                                <span class="badge bg-info">65%</span>
+                            </div>
+                            <div class="progress mb-2" role="progressbar" style="height: 8px;">
+                                <div class="progress-bar bg-info" style="width: 65%"></div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle text-success me-1"></i>1 major project
+                                <br>
+                                <i class="fas fa-check-circle text-success me-1"></i>Django experience
+                                <br>
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Needs: React/Frontend expertise
+                            </small>
+                        </div>
+
+                        <!-- Skill 4 -->
+                        <div class="skill-section mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Machine Learning</h6>
+                                <span class="badge bg-warning">55%</span>
+                            </div>
+                            <div class="progress mb-2" role="progressbar" style="height: 8px;">
+                                <div class="progress-bar bg-warning" style="width: 55%"></div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle text-success me-1"></i>Scikit-learn certification
+                                <br>
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Limited project experience
+                                <br>
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Needs: Deep Learning, NLP
+                            </small>
+                        </div>
+
+                        <!-- Skill 5 -->
+                        <div class="skill-section">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Communication Skills</h6>
+                                <span class="badge bg-danger">45%</span>
+                            </div>
+                            <div class="progress mb-2" role="progressbar" style="height: 8px;">
+                                <div class="progress-bar bg-danger" style="width: 45%"></div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Limited presentation experience
+                                <br>
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Few team project evidences
+                                <br>
+                                <i class="fas fa-lightbulb text-info me-1"></i>Recommended: Presentation workshops
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gap Analysis -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-gradient text-white">
+                        <h5 class="mb-0"><i class="fas fa-map-signs me-2"></i>Skill Gaps vs Target Role</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Target Role:</label>
+                            <select class="form-select form-select-sm" id="targetRole" onchange="updateGapAnalysis()">
+                                <option>Software Developer</option>
+                                <option>Data Scientist</option>
+                                <option>ML Engineer</option>
+                                <option>Full Stack Developer</option>
+                            </select>
+                        </div>
+
+                        <div class="gap-section mt-4">
+                            <h6 class="mb-3">Gap Analysis for Software Developer</h6>
+                            <div class="gap-item mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="fas fa-check text-success me-2"></i>Python</span>
+                                    <span class="small">Your: 78% | Required: 70%</span>
+                                </div>
+                                <small class="text-success">✓ Matched</small>
+                            </div>
+                            <div class="gap-item mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="fas fa-check text-success me-2"></i>Data Structures</span>
+                                    <span class="small">Your: 72% | Required: 75%</span>
+                                </div>
+                                <small class="text-warning">⚠ Nearly Matched - Improve by 5%</small>
+                            </div>
+                            <div class="gap-item mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="fas fa-times text-danger me-2"></i>System Design</span>
+                                    <span class="small">Your: 0% | Required: 60%</span>
+                                </div>
+                                <small class="text-danger">✗ Gap: Need to learn System Design</small>
+                            </div>
+                            <div class="gap-item">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="fas fa-times text-danger me-2"></i>Database Design</span>
+                                    <span class="small">Your: 40% | Required: 70%</span>
+                                </div>
+                                <small class="text-danger">✗ Gap: Improve by 30%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Skill Distribution Chart -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-gradient text-white">
+                        <h6 class="mb-0"><i class="fas fa-pie-chart me-2"></i>Skill Distribution</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="skillChart" height="300"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recommended Actions -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-gradient text-white">
+                        <h6 class="mb-0"><i class="fas fa-tasks me-2"></i>Recommended Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="action-list">
+                            <div class="action-item mb-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-start">
+                                    <span class="badge bg-danger me-3">1</span>
+                                    <div>
+                                        <h6 class="small mb-1">Learn System Design</h6>
+                                        <p class="small text-muted mb-0">Critical gap for your target role</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-item mb-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-start">
+                                    <span class="badge bg-warning me-3">2</span>
+                                    <div>
+                                        <h6 class="small mb-1">Improve Communication</h6>
+                                        <p class="small text-muted mb-0">Soft skills are valued highly</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-item mb-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-start">
+                                    <span class="badge bg-info me-3">3</span>
+                                    <div>
+                                        <h6 class="small mb-1">Advanced Database Design</h6>
+                                        <p class="small text-muted mb-0">Take online course or project</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <div class="d-flex align-items-start">
+                                    <span class="badge bg-success me-3">4</span>
+                                    <div>
+                                        <h6 class="small mb-1">Build Real-world Project</h6>
+                                        <p class="small text-muted mb-0">Showcase your full-stack skills</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 ISOTOPES. Building careers through evidence-based skill intelligence.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize skill chart
+        const ctx = document.getElementById('skillChart').getContext('2d');
+        const skillChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Strong (70%+)', 'Moderate (50-70%)', 'Developing (<50%)'],
+                datasets: [{
+                    data: [60, 30, 10],
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        function updateGapAnalysis() {
+            // This would be connected to backend API
+            alert('Gap analysis updated for selected role');
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
